@@ -16,6 +16,9 @@
 #       Adjust %{old_version} and %{old_soversion} accordingly!
 %bcond_with keep_oldversion_hack
 
+# To build `openssl-next-libs-1.1.1` for Sailfish OS 3.4
+%bcond_with build_next_libs
+
 %define soversion 1.1
 %define old_version 1.0.2o+git5
 %define old_soversion 10
@@ -115,6 +118,22 @@ Obsoletes: openssl < 1.0.1b
 OpenSSL is a toolkit for supporting cryptography. The openssl-libs
 package contains the libraries that are used by various applications which
 support cryptographic algorithms and protocols.
+
+%if %{with build_next_libs}
+%package next-libs
+Summary: A general purpose cryptography library with TLS implementation
+Requires: sailfish-version < 4.0
+Requires: openssl-libs >= 1.0, openssl-libs < 1.1
+Requires: ca-certificates >= 2008-5
+Provides: libcrypto.so.1.1
+Provides: libssl.so.1.1
+
+%description next-libs
+OpenSSL is a toolkit for supporting cryptography. The openssl-libs
+package contains the libraries that are used by various applications which
+support cryptographic algorithms and protocols. This library backport is
+a minimal packaging of the OpenSSL 1.1 .so files and symlinks for SFOS 3.4.
+%endif
 
 %package devel
 Summary: Files for development of applications which will use OpenSSL
@@ -445,6 +464,18 @@ cp -a /%{_lib}/libcrypto.so.%{old_soversion} $RPM_BUILD_ROOT/%{_lib}/.
 #%attr(0644,root,root) %%{_libdir}/.libssl.so.*.hmac
 %attr(0755,root,root) %{_libdir}/%{name}
 
+%if %{with build_next_libs}
+%files next-libs
+%defattr(-,root,root)
+%{!?_licensedir:%global license %%doc}
+%license LICENSE
+%attr(0755,root,root) %{_libdir}/libcrypto.so.%{version}
+%attr(0755,root,root) %{_libdir}/libssl.so.%{version}
+%{_libdir}/libcrypto.so.%{soversion}
+%{_libdir}/libssl.so.%{soversion}
+%attr(0755,root,root) %{_libdir}/%{name}
+%endif
+
 %files devel
 %defattr(-,root,root)
 %doc CHANGES doc/dir-locals.example.el doc/openssl-c-indent.el
@@ -478,3 +509,7 @@ cp -a /%{_lib}/libcrypto.so.%{old_soversion} $RPM_BUILD_ROOT/%{_lib}/.
 
 %postun libs -p /sbin/ldconfig
 
+%if %{with build_next_libs}
+%post next-libs -p /sbin/ldconfig
+%postun next-libs -p /sbin/ldconfig
+%endif
